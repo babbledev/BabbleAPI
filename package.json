@@ -1,0 +1,30 @@
+{
+  "name": "babble-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "async": "^2.4.0",
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.17.1",
+    "crypto": "0.0.3",
+    "express": "^4.15.2",
+    "jsonwebtoken": "^7.4.0",
+    "mongoose": "^4.9.7",
+    "morgan": "^1.8.1",
+    "nodemailer": "^4.0.1",
+    "random-words": "0.0.1",
+    "redis": "^2.7.1",
+    "redisscan": "git+https://github.com/skliffmueller/node-redisscan.git",
+    "request": "^2.81.0",
+    "socket.io-client": "^2.0.1",
+    "timeunit": "^1.1.1",
+    "uuid": "^3.1.0"
+  }
+}
