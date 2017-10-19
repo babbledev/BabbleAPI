@@ -7,9 +7,11 @@ const uuidv4 = require('uuid/v4');
 const User = mongoose.model('user');
 const Server = mongoose.model('server');
 
-module.exports = function(app, redisClient, common) {
+const USER_SESSION_LENGTH = 60 * 60 * 24 * 30; //30 days
 
+module.exports = function(app, redisClient, common) {
     let module = {};
+    let validate = require('./auth/validate')(redisClient);
 
     module.generateNewUserSession = function(user, callback) {
         //redis key
@@ -29,33 +31,49 @@ module.exports = function(app, redisClient, common) {
         });
     };
 
-    app.post('/users/login', function(req, res, next) {
-        User.findOne({device_id: req.body.deviceId}, function(err, user) {
-            if(!user) {
+    app.post('/users/check_login', validate.user, (req, res, next) => {
+        res.json({});
+    })
+
+    app.post('/users/login', (req, res, next) => {
+        User.findOne({device_id: req.body.deviceId}, (err, user) => {
+            if(user) {
+                module.generateNewUserSession(user, (data) => {
+                    res.json(data);
+                })
+            } else {
+                res.status(401).json({ noAccount: true });
+            }
+        });
+    });
+
+    app.post('/users/register', (req, res, next) => {
+        User.findOne({ device_id: req.body.deviceId }, (err, user) => {
+            if (!user) {
                 user = new User({
-                    deviceId: req.body.device_id,
+                    deviceId: req.body.deviceId,
                     registered: new Date().getTime(),
                     lastLogin: new Date().getTime()
                 });
-                user.save(function(err) {
-                    if(err) console.log(err);
-                    servers.createServerWithRandomName(user, function(server) {
+                user.save((err) => {
+                    if (err) console.log(err);
+                    servers.createServerWithRandomName(user, (server) => {
                         //this needs to match the session serialized server object
                         //for now we can just assign like this since we just need _id and name.
                         user.server = server;
 
-                        module.generateNewUserSession(user, function(data) {
+                        module.generateNewUserSession(user, (data) => {
                             res.json(data);
                         });
                     });
                 })
             } else {
-                module.generateNewUserSession(user, function(data) {
+                module.generateNewUserSession(user, (data) => {
                     res.json(data);
                 })
             }
         });
-    });
+    })
 
     return module;
 
