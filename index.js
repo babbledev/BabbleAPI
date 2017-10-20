@@ -6,6 +6,7 @@ const app = express();
 
 const redis = require('redis');
 const redisClient = redis.createClient({
+    host: config.redis.host,
     password: config.redis.password
 });
 
