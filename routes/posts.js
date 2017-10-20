@@ -13,20 +13,33 @@ module.exports = function(app, redisClient, common) {
     let module = {};
     let validate = require('./auth/validate')(redisClient);
 
+    /**
+     * Post Feed
+     */
     app.get('/posts', validate.user, (req, res) => {
-        if (!(req.query.lat && req.query.lon)) {
+        if (!(req.query.lon && req.query.lat)) {
             res.status(500).json({ error: 'Missing required query strings' });
             return;
         }
 
-        let lattitude = parseFloat(req.query.lat);
         let longitude = parseFloat(req.query.lon);
+        let latitude = parseFloat(req.query.lat);
 
-        console.log([lattitude, longitude]);
+        console.log([longitude, latitude]);
 
         Post.find(
-            { loc: { $near: [lattitude, longitude], $maxDistance: 10 } }
-        ).sort({ posted: 1 }).limit(20).exec((err, posts) => {
+            {
+                loc: {
+                    $near: {
+                        $geometry: {
+                            type: "Point",
+                            coordinates: [longitude, latitude]
+                        },
+                        $maxDistance: 10
+                    }
+                }
+            }
+        ).sort({ posted: -1 }).limit(20).exec((err, posts) => {
             if (err) {
                 console.log(err);
                 res.status(500).json({ error: 'Error retreiving latest posts.' });
@@ -34,6 +47,56 @@ module.exports = function(app, redisClient, common) {
             }
 
             res.json({ posts: posts });
+        })
+    })
+
+    /**
+     * New Post
+     */
+    app.post('/post', validate.user, (req, res) => {
+        if (!req.body.content) {
+            res.status(500).json({ error: 'Invalid post content' });
+            return;
+        }
+
+        if (req.body.longitude == null || req.body.latitude == null) {
+            res.status(500).json({ error: 'Invalid location.', invalidLocation: true });
+            return;
+        }
+
+        if (req.body.content.length > 140) {
+            res.status(500).json({ error: 'Post too long!', postTooLong: true });
+            return;
+        }
+
+        console.log('post body: ' + JSON.stringify(req.body));
+
+        let post = new Post({
+            content: req.body.content,
+            author: req.user._id,
+            comments: [],
+            loc: {
+                type: "Point",
+                coordinates: [req.body.longitude, req.body.latitude]
+            },
+
+            upvotes: [req.user._id],
+            upvoteCount: 1,
+            downvotes: [],
+            downvoteCount: 0,
+
+            posted: new Date().getTime(),
+            lastComment: new Date().getTime(),
+            lastVote: new Date().getTime()
+        })
+        post.save((err) => {
+            if (err) {
+                console.log(err);
+                res.status(500).json({ error: 'Failed to save post' });
+                return;
+            }
+
+            res.json({ post: post });
         })
     })
 
