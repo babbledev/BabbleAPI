@@ -30,6 +30,7 @@ app.use(function(req, res, next) {
 
 // Routes
 users = require('./routes/users')(app, redisClient);
+posts = require('./routes/posts')(app, redisClient);
 
 const port = config.port;
 

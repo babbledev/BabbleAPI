@@ -7,49 +7,31 @@ const Schema = mongoose.Schema,
 const User = new Schema({
     deviceId           : String,
     registered         : Number,
-    lastLogin          : Number
+    lastLogin          : Number,
+    posts              : [ObjectId]          
 });
 mongoose.model('user', User);
 
-const ServerPlugin = new Schema({
-    name: String,
-    platform: String,
-    description: String,
-    version: String,
-    file_name: String,
-    last_updated: Number,
-    disabled: Boolean
-});
-mongoose.model('server_plugin', ServerPlugin);
+const Post = new Schema({
+    content: String,
+    author: ObjectId,
+    comments: [ObjectId],
+    loc: { type: { type: String }, coordinates: [Number] },
 
-const Server = new Schema({
-    owner               : ObjectId,
-    name                : String,
-    name_lower          : String,
-    creation            : Number,
-    last_online         : Number,
+    bearings: Number,
+    posted: Number,
+    lastComment: Number,
+    lastVote: Number
+})
+mongoose.model('post', Post);
 
-    installed_plugins   : [ObjectId],
+const Comment = new Schema({
+    content: String,
+    author: ObjectId,
+    post: ObjectId,
+    loc: { type: { type: String }, coordinates: [Number] },
 
-    perform_world_reset : String
-});
-
-Server.methods.toJSON = function() {
-    let server = this.toObject();
-
-    if(server.rank) {
-        server.rank_full = servers.ranks[server.rank];
-    } else {
-        server.rank_full = servers.ranks.DEFAULT;
-    }
-    return server;
-};
-
-mongoose.model('server', Server);
-
-const ServerUptime = new Schema({
-    server          : ObjectId,
-    date            : String,
-    time            : Number
-});
-mongoose.model('server_uptime', ServerUptime);
+    bearings: Number,
+    posted: Number,
+    lastVote: Number
+})

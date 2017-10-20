@@ -5,7 +5,6 @@ const bcrypt = require('bcrypt-nodejs');
 const uuidv4 = require('uuid/v4');
 
 const User = mongoose.model('user');
-const Server = mongoose.model('server');
 
 const USER_SESSION_LENGTH = 60 * 60 * 24 * 30; //30 days
 
@@ -57,15 +56,7 @@ module.exports = function(app, redisClient, common) {
                 });
                 user.save((err) => {
                     if (err) console.log(err);
-                    servers.createServerWithRandomName(user, (server) => {
-                        //this needs to match the session serialized server object
-                        //for now we can just assign like this since we just need _id and name.
-                        user.server = server;
-
-                        module.generateNewUserSession(user, (data) => {
-                            res.json(data);
-                        });
-                    });
+                    res.json(data);
                 })
             } else {
                 module.generateNewUserSession(user, (data) => {
