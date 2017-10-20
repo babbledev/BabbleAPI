@@ -22,6 +22,8 @@ module.exports = function(app, redisClient, common) {
         let lattitude = parseFloat(req.query.lat);
         let longitude = parseFloat(req.query.lon);
 
+        console.log([lattitude, longitude]);
+
         Post.find(
             { loc: { $near: [lattitude, longitude], $maxDistance: 10 } }
         ).sort({ posted: 1 }).limit(20).exec((err, posts) => {

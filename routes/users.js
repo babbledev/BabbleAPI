@@ -35,7 +35,7 @@ module.exports = function(app, redisClient, common) {
     })
 
     app.post('/users/login', (req, res, next) => {
-        User.findOne({device_id: req.body.deviceId}, (err, user) => {
+        User.findOne({deviceId: req.body.deviceId}, (err, user) => {
             if(user) {
                 module.generateNewUserSession(user, (data) => {
                     res.json(data);
@@ -47,7 +47,9 @@ module.exports = function(app, redisClient, common) {
     });
 
     app.post('/users/register', (req, res, next) => {
-        User.findOne({ device_id: req.body.deviceId }, (err, user) => {
+        console.log('body: ' + JSON.stringify(req.body));
+        console.log('device id: ' + req.body.deviceId);
+        User.findOne({ deviceId: req.body.deviceId }, (err, user) => {
             if (!user) {
                 user = new User({
                     deviceId: req.body.deviceId,
@@ -56,7 +58,9 @@ module.exports = function(app, redisClient, common) {
                 });
                 user.save((err) => {
                     if (err) console.log(err);
-                    res.json(data);
+                    module.generateNewUserSession(user, (data) => {
+                        res.json(data);
+                    })
                 })
             } else {
                 module.generateNewUserSession(user, (data) => {

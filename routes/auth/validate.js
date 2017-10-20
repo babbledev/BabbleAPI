@@ -6,7 +6,7 @@ module.exports = function(redisClient) {
     let module = {};
 
     module.user = function(req, res, next) {
-        let token = req.body.token || req.query.token || req.headers['x-access-token'];
+        let token = req.header('Authorization');
 
         if(token) {
             redisClient.get('user-session-' + token, function(err, session) {
@@ -20,7 +20,7 @@ module.exports = function(redisClient) {
                     next();
                 } else {
                     return res.status(401).send({
-                        message: "Session expired. Please login."
+                        message: "Session not found. Please login."
                     })
                 }
             })
@@ -32,7 +32,7 @@ module.exports = function(redisClient) {
     };
 
     module.internal = function(req, res, next) {
-        let token = req.body.token || req.query.token || req.headers['x-access-token'];
+        let token = req.body.token || req.query.token || req.headers['Authorization'];
 
         if (token) {
             if(token === config.auth.internal) {
