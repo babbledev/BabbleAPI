@@ -6,6 +6,7 @@ const uuidv4 = require('uuid/v4');
 
 const User = mongoose.model('user');
 const Post = mongoose.model('post');
+const Comment = mongoose.model('comment');
 
 const USER_SESSION_LENGTH = 60 * 60 * 24 * 30; //30 days
 
@@ -35,7 +36,7 @@ module.exports = function(app, redisClient, common) {
                             type: "Point",
                             coordinates: [longitude, latitude]
                         },
-                        $maxDistance: 10
+                        $maxDistance: 99999999
                     }
                 }
             }
@@ -97,6 +98,59 @@ module.exports = function(app, redisClient, common) {
             }
 
             res.json({ post: post });
+        })
+    })
+
+    /**
+     * Upvote
+     */
+    app.post('/:type/:id/vote', validate.user, (req, res) => {
+        let _id = new mongoose.Types.ObjectId(req.params.id);
+
+        let collection;
+        if(req.params.type == 'post') {
+            collection = Post; 
+        } else if (req.params.type == 'comment') {
+            collection = Comment;
+        } else {
+            res.status(401).json({postTypeNotFound: true});
+            return;
+        }
+
+        collection.findOne({ _id: _id }, (err, post) => {
+            if (!post) {
+                res.status(400).json({ postNotFound: true });
+                return;
+            }
+
+            //user already upvoted post
+            if (post.upvotes.indexOf(_id) > -1) {
+                return res.json({})
+                return;
+            }
+
+            //user previously downvoted
+            if (post.downvotes.indexOf(_id) > -1) {
+                collection.update({ _id: _id }, {
+                    $addToSet: { upvotes: _id },
+                    $inc: { upvoteCount: 1, downvoteCount: -1, bearingsCount: 2 },
+                    $pull: { downvotes: _id }
+                }, (err) => {
+                    User.update({ _id: post.author }, { $inc: { bearings: 2 } }, (err) => {
+                        res.json({});
+                    })
+                })
+            } else {
+                collection.update({ _id: _id }, {
+                    $addToSet: { upvotes: _id },
+                    $inc: { upvoteCount: 1, bearingsCount: 1 },
+                    $pull: { downvotes: _id }
+                }, (err) => {
+                    User.update({ _id: post.author }, { $inc: { bearings: 1 } }, (err) => {
+                        res.json({});
+                    })
+                })
+            }
         })
     })
 
