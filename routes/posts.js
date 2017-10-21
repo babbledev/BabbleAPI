@@ -25,7 +25,7 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 }
 
 function getMilesFromKm(km) {
-    return km / 1609;
+    return km / 1.609;
 }
 
 function deg2rad(deg) {
@@ -70,7 +70,7 @@ module.exports = function(app, redisClient, common) {
             }
 
             posts.forEach((post) => {
-                let distanceKm = getDistanceFromLatLonInKm(latitude, longitude, post.loc.coords[1], post.loc.coords[0]);
+                let distanceKm = getDistanceFromLatLonInKm(latitude, longitude, post.loc.coordinates[1], post.loc.coordinates[0]);
                 let distanceMiles = getMilesFromKm(distanceKm);
 
                 distanceKm = Math.round(distanceKm * 10) / 10;
