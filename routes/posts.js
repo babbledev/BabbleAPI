@@ -10,6 +10,28 @@ const Comment = mongoose.model('comment');
 
 const USER_SESSION_LENGTH = 60 * 60 * 24 * 30; //30 days
 
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+    var R = 6371; // Radius of the earth in km
+    var dLat = deg2rad(lat2 - lat1);  // deg2rad below
+    var dLon = deg2rad(lon2 - lon1);
+    var a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2)
+        ;
+    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    var d = R * c; // Distance in km
+    return d;
+}
+
+function getMilesFromKm(km) {
+    return km / 1609;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180)
+}
+
 module.exports = function(app, redisClient, common) {
     let module = {};
     let validate = require('./auth/validate')(redisClient);
@@ -40,12 +62,26 @@ module.exports = function(app, redisClient, common) {
                     }
                 }
             }
-        ).sort({ posted: -1 }).limit(20).exec((err, posts) => {
+        ).lean().sort({ posted: -1 }).limit(20).exec((err, posts) => {
             if (err) {
                 console.log(err);
                 res.status(500).json({ error: 'Error retreiving latest posts.' });
                 return;
             }
+
+            posts.forEach((post) => {
+                let distanceKm = getDistanceFromLatLonInKm(latitude, longitude, post.loc.coords[1], post.loc.coords[0]);
+                let distanceMiles = getMilesFromKm(distanceKm);
+
+                distanceKm = Math.round(distanceKm * 10) / 10;
+                distanceMiles = Math.round(distanceMiles * 10) / 10;
+
+                post.distanceKm = distanceKm;
+                post.distanceMiles = distanceMiles;
+
+                //don't give users the exact location of the posts
+                delete post.loc;
+            });
 
             res.json({ posts: posts });
         })
